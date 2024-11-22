@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 # %%
 import os  
 import shutil
@@ -20,7 +21,7 @@ def prompt_user_choice(item_path):
             'y': '文件 - 需要整理（整体）',  
             'z': '文件 - 需要整理（整体-压缩）',  
         }  
-    print(f"\n请为 \033[1;31m{item_type}\033[0m \033[1;32m'{item_path}'\033[0m 选择处理方式:")  
+    print(f"\n请为 {item_type} '{item_path}' 选择处理方式:")  
     for key, desc in choices.items():  
         print(f"{key}. {desc}")  
       
@@ -51,7 +52,7 @@ def get_tag_from_user(item_name):
 # %%
 def create_destination_path(tag):  
     while True:  
-        destination_path = os.path.abspath(input(f"请你输入有关 - {tag} - 标签的目标路径\n"))
+        destination_path = os.path.abspath(input(f"请你输入有关 - {tag} - 标签的目标路径"))
         # 检查路径是否存在  
         if os.path.exists(destination_path):  
             # 如果路径存在，检查它是否是一个目录  
@@ -70,7 +71,15 @@ def create_destination_path(tag):
                 print(f"创建目录时发生错误: {e}")  
                 continue
      
-
+# %%
+def writeToFile(tag,cont):
+    try:
+        with open(recordFile,'a') as ff:
+            x=f"{tag}@@@@@@@@@@{cont}\n"
+            ff.write(x)
+    except:
+        print("路径记录到配置文件失败")
+        pass
 # %%
 def process_directory(main_path):  
     if not os.path.isdir(main_path):  
@@ -94,7 +103,8 @@ def process_directory(main_path):
             destination_path = tags_and_destinations.get(tag)  
             if not destination_path:  
                 destination_path = create_destination_path(tag)  
-                tags_and_destinations[tag] = destination_path  
+                tags_and_destinations[tag] = destination_path
+                writeToFile(tag, destination_path)
             if choice == 'z':
                 zip_path = f"{item_path}.zip"
                 compress_item(item_path, zip_path)
@@ -104,10 +114,11 @@ def process_directory(main_path):
                 elif os.path.isdir(item_path):  
                     shutil.rmtree(item_path)  
                 item_path=zip_path
-            if os.path.exists(f"{destination_path}\\{item_name}"):
-                destination_path=f"{destination_path}\\{item_name}.bak"
-            shutil.move(item_path, destination_path)
             print(f"{item_path}->{destination_path}")
+            try:
+                shutil.move(item_path, destination_path)
+            except:
+                print(f"无法移动文件")
         else:  
             assert False, f"无效的选项: {choice}"  
 
@@ -115,7 +126,17 @@ def process_directory(main_path):
 # %%
 # 主程序入口  
 tags_and_destinations = {}
+recordFile='./record.ini'
 def main():  
+    try:
+        with open(recordFile,'r') as ff:
+            for line in ff.readlines():
+                cont=line.strip().split("@@@@@@@@@@")
+                tags_and_destinations[cont[0]]=cont[1]
+    except:
+        print("无法读取配置文件，不存在或无权限")
+        pass
+    tags_and_destinations
     main_path = input("请输入需要整理的父目录 MainPath: ")  
     main_path = os.path.abspath(main_path)  
     process_directory(main_path)  
